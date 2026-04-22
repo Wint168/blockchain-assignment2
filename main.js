@@ -1,8 +1,8 @@
 let records = JSON.parse(localStorage.getItem("records")) || [];
 
-// === Display records in correct warehouse ===
+
 function displayRecords() {
-    // Clear all tables
+    
     document.querySelector(".warehouse_A tbody").innerHTML = "";
     document.querySelector(".warehouse_B tbody").innerHTML = "";
     document.querySelector(".warehouse_C tbody").innerHTML = "";
@@ -18,7 +18,7 @@ function displayRecords() {
             </tr>
         `;
 
-        // Put into correct warehouse
+        
         if (record.location === "A") {
             document.querySelector(".warehouse_A tbody").innerHTML += row;
         } else if (record.location === "B") {
@@ -31,7 +31,7 @@ function displayRecords() {
     });
 }
 
-// === Add new record ===
+
 document.getElementById("addRecordForm").addEventListener("submit", function(e) {
     e.preventDefault();
 
@@ -49,6 +49,6 @@ document.getElementById("addRecordForm").addEventListener("submit", function(e) 
     this.reset();
 });
 
-// === Load on page start ===
+
 window.onload = displayRecords;
 
