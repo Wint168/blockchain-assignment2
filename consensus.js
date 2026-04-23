@@ -2,7 +2,7 @@
 
 // Select and justify an appropriate consensus
 // mechanism for the given scenario.
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────
 
 /*
   CHOSEN MECHANISM: Majority Voting (simplified PBFT)
@@ -39,7 +39,7 @@ const CONSENSUS_THRESHOLD = 3;
 // Implement the selected consensus mechanism to
 // determine whether a newly submitted record should
 // be accepted or rejected.
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────
 
 function runConsensus(record, verificationResults) {
   const votes = verificationResults.map(result => ({
@@ -64,7 +64,7 @@ function runConsensus(record, verificationResults) {
 
 // Ensure that all inventory nodes reach a consistent
 // decision before the record is stored locally.
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────
 
 function allNodesAgree(consensusResult) {
   const votes  = consensusResult.votes.map(v => v.vote);
@@ -76,8 +76,7 @@ function allNodesAgree(consensusResult) {
 // After a successful consensus outcome, store the
 // accepted record in each inventory node's local
 // database.
-// ─────────────────────────────────────────────────────────────
-
+// ────────────────────────────────────────────────
 
 function storeRecord(record) {
   NODES.forEach(node => {
