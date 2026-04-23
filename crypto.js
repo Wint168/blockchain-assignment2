@@ -45,8 +45,6 @@ async function sha256(data) {
     .join("");
 }
 
-
-
 // Initialising cryptographic parameters
 // ─────────────────────────────────────────────────────────────
 
@@ -80,7 +78,6 @@ const NODES = [
 
 // Derive any additional key components required
 // ─────────────────────────────────────────────────────────────
-
 
 NODES.forEach(node => {
   node.n       = node.p * node.q;
@@ -127,7 +124,6 @@ async function signRecord(record) {
     signature: signature.toString(),
   };
 }
-
 
 // VERIFICATION
 // ─────────────────────────────────────────────────────────────
