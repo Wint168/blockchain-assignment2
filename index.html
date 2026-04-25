@@ -3,16 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Blockchain Assignment 2</title>
     <link rel="stylesheet" href="style.css">
-    <h1>Blockchain Assignment 2</h1>
 </head>
 
 <body>
 
+    <h1>Blockchain Assignment 2</h1>
+
+    <div class="top-panel">
+
+        <div class="card">
+        <div class="card-body">Add New Record</div>
+        <form id="addRecordForm">
+            <label>ItemID: <input type="number" id="ItemID" required></label><br><br>
+            <label>ItemQTY: <input type="number" id="ItemQTY" required></label><br><br>
+            <label>ItemPrice: <input type="number" id="ItemPrice" required></label><br><br>
+            <label>Location:
+                <select id="Location" required>
+                    <option value="">-- Select Warehouse --</option>
+                    <option value="A">Warehouse A</option>
+                    <option value="B">Warehouse B</option>
+                    <option value="C">Warehouse C</option>
+                    <option value="D">Warehouse D</option>
+                </select>
+            </label><br><br>
+            <button type="submit">Add Record</button>
+        </form>
+        </div>
+
+        <div class="card">
+            <div class="card-body">Process Log</div>
+            <div id="logBox"></div>
+        </div>
+
+    </div>
+
     <div class="warehouse-box">
     <h1 class="titleA">Warehouse A</h1>
-   
     <table class="warehouse_A">
             <thead>
                 <tr>
@@ -22,9 +50,7 @@
                     <th>Location</th> 
                 </tr>
             </thead>
-            <tbody>
-              
-            </tbody>
+            <tbody></tbody>
     </table>
     </div>
 
@@ -39,9 +65,7 @@
                     <th>Location</th> 
                 </tr>
             </thead>
-            <tbody>
-              
-            </tbody>
+            <tbody></tbody>
     </table>
     </div>
 
@@ -56,9 +80,7 @@
                     <th>Location</th> 
                 </tr>
             </thead>
-            <tbody>
-              
-            </tbody>
+            <tbody></tbody>
     </table>
     </div>
 
@@ -73,36 +95,15 @@
                     <th>Location</th> 
                 </tr>
             </thead>
-            <tbody>
-              
-            </tbody>
+            <tbody></tbody>
     </table>
     </div>
 
     
-    <div class="card">
-    <div class="card-body">
-        Add New Record
-    </div>
-    <form id="addRecordForm">
-        <label>ItemID: <input type="number" id="ItemID" required></label><br><br>
-        <label>ItemQTY: <input type="number" id="ItemQTY" required></label><br><br>
-        <label>ItemPrice: <input type="number" id="ItemPrice" required></label><br><br>
-        <label>Location: <input type="text" id="Location" required></label><br><br>
-        <button type="submit">Add Record</button>
-    </form>
-    </div>
 
-    <div class="card">
-        <div class="card-body">Process Log</div>
-        <div id="logBox"></div>
-    </div>
-
-
-     <script src="crypto.js"></script>
-     <script src="consensus.js"></script>
-
-     <script src="main.js"></script>
+    <script src="crypto.js"></script>
+    <script src="consensus.js"></script>
+    <script src="main.js"></script>
 
 </body>
 </html>

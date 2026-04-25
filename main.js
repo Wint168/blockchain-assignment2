@@ -53,16 +53,18 @@ document.getElementById("addRecordForm").addEventListener("submit", async functi
     log("Signing record...");
     await delay(500);
     const signedRecord = await signRecord(record);
-    log("Signature generated");
+    log(`Digest (SHA-256): ${signedRecord.digest}`);
+    log(`Signature: ${signedRecord.signature}`);
 
     log("Verifying across nodes...");
     await delay(500);
     const verificationResults = await verifyAcrossNodes(signedRecord);
 
     verificationResults.forEach(v => {
-        log(`Node ${v.verifyingNode}: ${v.valid ? "valid" : "invalid"}`);
+    log(`Node ${v.verifyingNode} recovered digest: ${v.recovered}`);
+    log(`Node ${v.verifyingNode}: ${v.valid ? "✓ valid" : "✗ invalid"}`);
     });
-
+    
     log("Running consensus...");
     await delay(500);
     const consensusResult = runConsensus(signedRecord, verificationResults);
