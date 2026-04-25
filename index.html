@@ -6,9 +6,115 @@
     <title>Document</title>
     <link rel="stylesheet" href="style.css">
     <h1>Blockchain Assignment 2</h1>
+    <link rel="stylesheet" href="style.css">
+    <h1>Blockchain Assignment 2</h1>
 </head>
 
+
 <body>
+
+    <div class="warehouse-box">
+    <h1 class="titleA">Warehouse A</h1>
+   
+    <table class="warehouse_A">
+            <thead>
+                <tr>
+                    <th>ItemID</th>
+                    <th>ItemQTY</th>
+                    <th>ItemPrice</th>
+                    <th>Location</th> 
+                </tr>
+            </thead>
+            <tbody>
+              
+            </tbody>
+    </table>
+    </div>
+
+    <div class="warehouse-box">
+    <h1 class="titleB">Warehouse B</h1>
+    <table class="warehouse_B">
+            <thead>
+                <tr>
+                    <th>ItemID</th>
+                    <th>ItemQTY</th>
+                    <th>ItemPrice</th>
+                    <th>Location</th> 
+                </tr>
+            </thead>
+            <tbody>
+              
+            </tbody>
+    </table>
+    </div>
+
+    <div class="warehouse-box">
+    <h1 class="titleC">Warehouse C</h1>
+    <table class="warehouse_C">
+            <thead>
+                <tr>
+                    <th>ItemID</th>
+                    <th>ItemQTY</th>
+                    <th>ItemPrice</th>
+                    <th>Location</th> 
+                </tr>
+            </thead>
+            <tbody>
+              
+            </tbody>
+    </table>
+    </div>
+
+    <div class="warehouse-box">
+    <h1 class="titleD">Warehouse D</h1>
+    <table class="warehouse_D">
+            <thead>
+                <tr>
+                    <th>ItemID</th>
+                    <th>ItemQTY</th>
+                    <th>ItemPrice</th>
+                    <th>Location</th> 
+                </tr>
+            </thead>
+            <tbody>
+              
+            </tbody>
+    </table>
+    </div>
+
+    
+    <div class="card">
+    <div class="card-body">
+        Add New Record
+    </div>
+    <form id="addRecordForm">
+        <label>ItemID: <input type="number" id="ItemID" required></label><br><br>
+        <label>ItemQTY: <input type="number" id="ItemQTY" required></label><br><br>
+        <label>ItemPrice: <input type="number" id="ItemPrice" required></label><br><br>
+        <label>Location:
+            <select id="Location" required>
+                <option value="">-- Select Warehouse --</option>
+                <option value="A">Warehouse A</option>
+                <option value="B">Warehouse B</option>
+                <option value="C">Warehouse C</option>
+                <option value="D">Warehouse D</option>
+            </select>
+        </label>
+        <button type="submit">Add Record</button>
+    </form>
+    </div>
+
+    <div class="card">
+        <div class="card-body">Process Log</div>
+        <div id="logBox"></div>
+    </div>
+
+
+     <script src="crypto.js"></script>
+     <script src="consensus.js"></script>
+
+     <script src="main.js"></script>
+
 
     <div class="warehouse-box">
     <h1 class="titleA">Warehouse A</h1>
