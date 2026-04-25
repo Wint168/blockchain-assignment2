@@ -88,7 +88,15 @@
         <label>ItemID: <input type="number" id="ItemID" required></label><br><br>
         <label>ItemQTY: <input type="number" id="ItemQTY" required></label><br><br>
         <label>ItemPrice: <input type="number" id="ItemPrice" required></label><br><br>
-        <label>Location: <input type="text" id="Location" required></label><br><br>
+        <label>Location:
+            <select id="Location" required>
+                <option value="">-- Select Warehouse --</option>
+                <option value="A">Warehouse A</option>
+                <option value="B">Warehouse B</option>
+                <option value="C">Warehouse C</option>
+                <option value="D">Warehouse D</option>
+            </select>
+        </label>
         <button type="submit">Add Record</button>
     </form>
     </div>
