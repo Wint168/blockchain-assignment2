@@ -1,16 +1,11 @@
 "use strict";
-
-
-// MATH UTILITIES 
+// ─────────────────────────────────────────────────────────────
+// MATH UTILITIES
 // ─────────────────────────────────────────────────────────────
 
 function gcd(a, b) {
   while (b !== 0n) [a, b] = [b, a % b];
   return a;
-}
-
-function lcm(a, b) {
-  return (a / gcd(a, b)) * b;
 }
 
 function extGcd(a, b) {
@@ -37,6 +32,7 @@ function modPow(base, exp, mod) {
   return result;
 }
 
+// SHA-256 via browser Web Crypto API (hashing only)
 async function sha256(data) {
   const encoded = new TextEncoder().encode(data);
   const buffer  = await crypto.subtle.digest("SHA-256", encoded);
@@ -45,56 +41,58 @@ async function sha256(data) {
     .join("");
 }
 
-// Initialising cryptographic parameters
+
+// ─────────────────────────────────────────────────────────────
+// Initialise cryptographic parameters
+// Parameters are defined in keys/nodeX_parameters.js
+// NODES array is populated by those files at load time
 // ─────────────────────────────────────────────────────────────
 
-const NODES = [
-  {
-    name: "A",
-    p: 1210613765735147311106936311866593978079938707n,
-    q: 1247842850282035753615951347964437248190231863n,
-    e: 815459040813953176289801n,
-  },
-  {
-    name: "B",
-    p: 787435686772982288169641922308628444877260947n,
-    q: 1325305233886096053310340418467385397239375379n,
-    e: 692450682143089563609787n,
-  },
-  {
-    name: "C",
-    p: 1014247300991039444864201518275018240361205111n,
-    q: 904030450302158058469475048755214591704639633n,
-    e: 1158749422015035388438057n,
-  },
-  {
-    name: "D",
-    p: 1287737200891425621338551020762858710281638317n,
-    q: 1330909125725073469794953234151525201084537607n,
-    e: 33981230465225879849295979n,
-  },
-];
+const NODES = [];
 
-
-// Derive any additional key components required
-// ─────────────────────────────────────────────────────────────
-
-NODES.forEach(node => {
-  node.n       = node.p * node.q;
-  node.lambda  = lcm(node.p - 1n, node.q - 1n);
-  node.d       = modInverse(node.e, node.lambda);
-  node.records = []; // local record store per node
-});
-
-// Helper — get a node object by name
 function getNode(name) {
   const node = NODES.find(n => n.name === name);
   if (!node) throw new Error(`Node "${name}" not found`);
   return node;
 }
 
-// Canonical serialisation — produces an identical string for both
-// signing and verifying. Signature field is always excluded.
+
+// ─────────────────────────────────────────────────────────────
+// Derive additional key components
+// ─────────────────────────────────────────────────────────────
+
+/*
+  generateKeyPair(p, q, e) derives:
+    n    = p × q              (RSA modulus)
+    φ(n) = (p-1)(q-1)        (Euler's totient)
+    d    = e⁻¹ mod φ(n)      (private exponent)
+    where d × e ≡ 1 mod φ(n)
+
+  Returns:
+    pk = (e, n)  — public key,  shared for verification
+    sk = (d)     — private key, used only for signing
+*/
+function generateKeyPair(p, q, e) {
+  const n   = p * q;
+  const phi = (p - 1n) * (q - 1n);
+
+  if (gcd(e, phi) !== 1n)
+    throw new Error("e is not coprime with φ(n)");
+
+  const d  = modInverse(e, phi);
+  const pk = { e, n };
+  const sk = { d };
+
+  return { pk, sk, n, phi };
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// CANONICAL RECORD SERIALISATION
+// ─────────────────────────────────────────────────────────────
+
+// Produces identical bytes for both signing and verifying.
+// Signature field always excluded.
 function canonicalise(record) {
   return JSON.stringify({
     action:    record.action,
@@ -108,15 +106,23 @@ function canonicalise(record) {
 }
 
 
-// SIGNING
+// ─────────────────────────────────────────────────────────────
+// Sign an inventory record
 // ─────────────────────────────────────────────────────────────
 
+/*
+  Steps:
+    1. Serialise record to canonical JSON (no signature field)
+    2. SHA-256 digest → BigInt m
+    3. s = m^d mod n  (RSA private key operation)
+    4. Return record with digest and signature attached
+*/
 async function signRecord(record) {
   const node      = getNode(record.nodeId);
   const payload   = canonicalise(record);
   const digest    = await sha256(payload);
   const m         = BigInt("0x" + digest);
-  const signature = modPow(m, node.d, node.n);
+  const signature = modPow(m, node.sk.d, node.pk.n);
 
   return {
     ...record,
@@ -125,28 +131,40 @@ async function signRecord(record) {
   };
 }
 
-// VERIFICATION
+
+// ─────────────────────────────────────────────────────────────
+// Verify a signed record
 // ─────────────────────────────────────────────────────────────
 
+/*
+  Steps:
+    1. Serialise record (same canonical form)
+    2. SHA-256 digest → BigInt m
+    3. m' = s^e mod n  (RSA public key operation)
+    4. Valid if m === m'
+
+  Returns: { valid, digest, recovered, m, mRecovered }
+*/
 async function verifyRecord(record) {
-  const node      = getNode(record.nodeId);
-  const s         = BigInt(record.signature);
-  const payload   = canonicalise(record);
-  const digest    = await sha256(payload);
-  const m         = BigInt("0x" + digest);
-  const recovered = modPow(s, node.e, node.n);
+  const node       = getNode(record.nodeId);
+  const s          = BigInt(record.signature);
+  const payload    = canonicalise(record);
+  const digest     = await sha256(payload);
+  const m          = BigInt("0x" + digest);
+  const mRecovered = modPow(s, node.pk.e, node.pk.n);
 
   return {
-    valid:     m === recovered,
+    valid:      m === mRecovered,
     digest,
-    recovered: recovered.toString(16).padStart(64, "0"),
+    recovered:  mRecovered.toString(16).padStart(64, "0"),
+    m:          m.toString(),
+    mRecovered: mRecovered.toString(),
   };
 }
 
 /*
-  Each node other than the sender independently verifies the signed
-  record. All results are collected before proceeding to consensus.
-  The sender node is excluded.
+  All nodes except the sender independently verify the record.
+  Results are collected before proceeding to consensus.
 */
 async function verifyAcrossNodes(record) {
   const results    = [];
@@ -159,6 +177,8 @@ async function verifyAcrossNodes(record) {
       valid:         result.valid,
       digest:        result.digest,
       recovered:     result.recovered,
+      m:             result.m,
+      mRecovered:    result.mRecovered,
     });
   }
 

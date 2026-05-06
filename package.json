@@ -1,0 +1,12 @@
+{
+  "name": "blockchain-assignment2",
+  "version": "1.0.0",
+  "description": "INTE2627 Blockchain Assignment 2 - Secure DLT Inventory Management",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

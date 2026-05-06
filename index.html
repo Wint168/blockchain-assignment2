@@ -99,9 +99,17 @@
     </table>
     </div>
 
-    
-
+    <!--
+        1. crypto.js first       — defines NODES[], math utils, generateKeyPair
+        2. nodeX_parameters.js   — calls generateKeyPair(), pushes into NODES[]
+        3. consensus.js          — uses NODES[], handles voting and storage
+        4. main.js               — drives the UI workflow
+    -->
     <script src="crypto.js"></script>
+    <script src="keys/nodeA_parameters.js"></script>
+    <script src="keys/nodeB_parameters.js"></script>
+    <script src="keys/nodeC_parameters.js"></script>
+    <script src="keys/nodeD_parameters.js"></script>
     <script src="consensus.js"></script>
     <script src="main.js"></script>
 
