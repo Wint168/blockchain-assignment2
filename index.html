@@ -98,7 +98,32 @@
             <tbody></tbody>
     </table>
     </div>
+    
+    <!-- ───────────────────────────── -->
+<!-- MULTI-SIGNATURE QUERY PANEL -->
+<!-- ───────────────────────────── -->
 
+<!-- MULTI-SIGNATURE QUERY PANEL -->
+<div class="top-panel">
+
+    <div class="card">
+        <div class="card-body">Multi-Signature Query</div>
+
+        <label>Item ID:
+            <input type="number" id="searchItemID" placeholder="e.g. 002">
+        </label>
+
+        <br><br>
+
+        <button id="searchBtn">Run Multi-Signature Verification</button>
+    </div>
+
+    <div class="card">
+    <div class="card-body">Multi-Signature Log</div>
+    <div id="multiSignLog"></div>
+</div>
+
+</div>
     <!--
         1. crypto.js first       — defines NODES[], math utils, generateKeyPair
         2. nodeX_parameters.js   — calls generateKeyPair(), pushes into NODES[]
@@ -111,6 +136,7 @@
     <script src="keys/nodeC_parameters.js"></script>
     <script src="keys/nodeD_parameters.js"></script>
     <script src="consensus.js"></script>
+    <script src="multisign.js"></script>
     <script src="main.js"></script>
 
 </body>
