@@ -210,7 +210,7 @@ async function runMultiSignature(itemId) {
   // ─────────────────────────────
   // [5] COMPUTE t VALUES
   // ─────────────────────────────
-  msTitle("[5] RANDOM & t COMPUTATION");
+  msTitle("[5] t COMPUTATION");
 
 // show chosen random values
 msLog(`Signer A selects r1 = ${IDENTITY.A.r}`);
@@ -273,7 +273,7 @@ const H = result.hashDecimal;
 msLog(`H(t, m) = ${H.toString()}`);
   // [7] PARTIAL SIGNATURES
   // ─────────────────────────────
-  msTitle("[7] PARTIAL SIGNATURES");
+  msTitle("[7] SIGNATURES OF EACH SIGNERS");
 
   const s1 = mod(g1 * modPow(IDENTITY.A.r, H, n), n);
   const s2 = mod(g2 * modPow(IDENTITY.B.r, H, n), n);
@@ -287,7 +287,7 @@ msLog(`s4 = g4 * r4^H mod n = ${s4}`);
   // [8] AGGREGATION
   // ─────────────────────────────
   
-msTitle("[8] AGGREGATED SIGNATURE");
+msTitle("[8] COMPUTING MULTI-SIGNATURE COMPONENT");
 
 msFormula("s = (s1 × s2 × s3 × s4) mod n");
 
@@ -297,42 +297,42 @@ s = mod(s * s2, n);
 s = mod(s * s3, n);
 s = mod(s * s4, n);
 
-// log
-msLog("Substituting values:");
-msLog(`s = (${short(s1)} ×`);
-msLog(`     ${short(s2)} ×`);
-msLog(`     ${short(s3)} ×`);
-msLog(`     ${short(s4)}) mod n`);
 
 msLog("");
-msLog(`s = ${short(s)}`);
+msLog(`s = ${s}`);
 
 const signature = { t, s };
 
 msLog("");
 msLog("Final Signature:");
-msLog(`(t, s) = (${short(t)}, ${short(s)})`);
+msLog(`(t, s) = (${t}, ${s})`);
 
   // ─────────────────────────────
   // [9] VERIFICATION
   // ─────────────────────────────
-  msTitle("[9] VERIFICATION");
+  msTitle("[9] SIGNATURE VERIFICATION");
 
   const left = modPow(s, PKG.e, n);
 
-  const right =
-    mod(
-      (IDENTITY.A.i * IDENTITY.B.i * IDENTITY.C.i),
-      n
-    ) *
-    modPow(t, H, n) % n;
+// Step-by-step multiplication under mod
+const v1 = mod(IDENTITY.A.i * IDENTITY.B.i, n);
+const v2 = mod(v1 * IDENTITY.C.i, n);
+const v3 = mod(v2 * IDENTITY.D.i, n);
 
-  msLog(`Left (s^e mod n) = ${left}`);
-  msLog(`Right = ${right}`);
+// exponent part
+const v4 = modPow(t, H, n);
+
+// final
+const right = mod(v3 * v4, n);
+
+  msLog(`Verification 1 = s^e mod n = ${left}`);
+  msLog(`Verification 2 = (i1 * i2 * i3 * i4) * t^(H(t,m)) mod n  = ${right}`);
 
   if (left === right) {
+    msLog("Verification 1 = Verification 2");
     msLog("✓ SIGNATURE VALID");
   } else {
+    msLog("Verification 1 ≠ Verification 2");
     msLog("✗ SIGNATURE INVALID");
   }
 
