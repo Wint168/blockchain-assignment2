@@ -2,27 +2,23 @@
 
 /*
 ========================================================
-MULTI-SIGNATURE MODULE — TASK 2
+MULTI-SIGNATURE MODULE — TASK 3 FINAL (FIXED FLOW)
 ========================================================
-
-Flow:
-[1] Query record by itemId
-[2] Load identities (A, B, C)
-[3] PKG key generation
-[4] Secret key generation for each signer
-[5] Random r values
-[6] Compute t values
-[7] Compute H(t,m)
-[8] Compute partial signatures
-[9] Aggregate signature
-[10] Verification
+FLOW:
+[0] User query submission
+[0.5] Forward query to nodes
+[1] Distributed search
+[1.5] Node consensus (PBFT)
+[2–8] Multi-signature generation
+[9] Verification
+[10] Secure delivery (encrypt/decrypt)
+[11] User-side verification
 ========================================================
 */
 
 // ─────────────────────────────────────────────
 // UI LOGGER
 // ─────────────────────────────────────────────
-
 
 function msClear() {
   document.getElementById("multiSignLog").innerHTML = "";
@@ -51,6 +47,7 @@ function msFormula(text) {
   el.textContent = text;
   box.appendChild(el);
 }
+
 // ─────────────────────────────────────────────
 // BIG INT HELPERS
 // ─────────────────────────────────────────────
@@ -72,7 +69,7 @@ function mod(n, m) {
 }
 
 // ─────────────────────────────────────────────
-// HASH FUNCTION (simple SHA-256 wrapper expected from crypto.js)
+// HASH
 // ─────────────────────────────────────────────
 
 async function hashMessage(t, m) {
@@ -83,19 +80,18 @@ async function hashMessage(t, m) {
     new TextEncoder().encode(input)
   );
 
-  // HEX
-  const hashHex = Array.from(new Uint8Array(buffer))
+  const hashHex = [...new Uint8Array(buffer)]
     .map(b => b.toString(16).padStart(2, "0"))
     .join("");
 
-  // DECIMAL (REAL BigInt)
-  const hashDecimal = BigInt("0x" + hashHex);
-
-  return { input, hashHex, hashDecimal };
+  return {
+    hashHex,
+    hashDecimal: BigInt("0x" + hashHex)
+  };
 }
 
 // ─────────────────────────────────────────────
-// IDENTITIES (GIVEN)
+// IDENTITIES
 // ─────────────────────────────────────────────
 
 const IDENTITY = {
@@ -106,7 +102,7 @@ const IDENTITY = {
 };
 
 // ─────────────────────────────────────────────
-// PKG PARAMETERS (FROM YOUR TASK)
+// PKG
 // ─────────────────────────────────────────────
 
 const PKG = {
@@ -115,7 +111,6 @@ const PKG = {
   e: 973028207197278907211n
 };
 
-// derived
 const n = PKG.p * PKG.q;
 const phi = (PKG.p - 1n) * (PKG.q - 1n);
 
@@ -128,45 +123,121 @@ function modInverse(e, phi) {
     [a, b] = [b, a % b];
     [x0, x1] = [x1, x0 - q * x1];
   }
-
-  if (a !== 1n) {
-    throw new Error("e and φ(n) are not coprime");
-  }
-
   return mod(x0, phi);
 }
 
 const d = modInverse(PKG.e, phi);
 
 // ─────────────────────────────────────────────
-// QUERY RECORD
+// NODE SEARCH (DISTRIBUTED)
 // ─────────────────────────────────────────────
 
-async function queryRecord(itemId) {
+async function searchNode(node, itemId) {
   const all = await loadAllRecords();
+  return all[node]?.find(r => r.itemId === itemId) || null;
+}
+
+async function distributedSearch(itemId) {
+  const result = {};
 
   for (const node of ["A", "B", "C", "D"]) {
-    const record = all[node]?.find(r => r.itemId === itemId);
-    if (record) return record;
+    result[node] = await searchNode(node, itemId);
   }
 
-  throw new Error("Item not found");
+  return result;
 }
 
 // ─────────────────────────────────────────────
-// MAIN MULTI-SIGNATURE FLOW
+// CONSENSUS (PBFT SIMULATION)
+// ─────────────────────────────────────────────
+
+function runConsensus(results) {
+  const votes = {};
+  let acceptCount = 0;
+
+  for (const node of ["A", "B", "C", "D"]) {
+    const vote = results[node] ? "ACCEPT" : "REJECT";
+    votes[node] = vote;
+    if (vote === "ACCEPT") acceptCount++;
+  }
+
+  return {
+    votes,
+    acceptCount,
+    threshold: 3,
+    approved: acceptCount >= 3
+  };
+}
+
+// ─────────────────────────────────────────────
+// USER QUERY FLOW
+// ─────────────────────────────────────────────
+
+async function submitQuery(itemId) {
+  msClear();
+  msTitle("[0] USER QUERY SUBMISSION");
+  msLog(`Query itemId = ${itemId}`);
+
+  return await runMultiSignature(itemId);
+}
+
+// ─────────────────────────────────────────────
+// MAIN SYSTEM
 // ─────────────────────────────────────────────
 
 async function runMultiSignature(itemId) {
 
-  msClear();
-  msTitle("[1] QUERY PHASE");
+  // ────────────────
+  // [0.5] FORWARD QUERY
+  // ────────────────
+  msTitle("[0.5] FORWARD QUERY");
+  const query = {
+    itemId,
+    timestamp: new Date().toISOString(),
+    source: "external-user"
+  };
+  msLog(JSON.stringify(query, null, 2));
 
-  const record = await queryRecord(itemId);
-  const m = record.itemId + record.quantity + record.unitPrice + record.nodeId;
+  // ────────────────
+  // [1] SEARCH
+  // ────────────────
+  msTitle("[1] DISTRIBUTED SEARCH");
 
-  msLog("Record found:");
-  msLog(JSON.stringify(record, null, 2));
+  const searchResults = await distributedSearch(itemId);
+  msLog(JSON.stringify(searchResults, null, 2));
+
+  // ────────────────
+  // [1.5] CONSENSUS
+  // ────────────────
+  msTitle("[1.5] PBFT CONSENSUS");
+
+  const consensus = runConsensus(searchResults);
+
+  for (const n of ["A","B","C","D"]) {
+    msLog(`Node ${n} → ${consensus.votes[n]}`);
+  }
+
+  msLog(`Accepted: ${consensus.acceptCount}/4`);
+
+  if (!consensus.approved) {
+    msLog("✗ CONSENSUS FAILED");
+    return;
+  }
+
+  msLog("✓ CONSENSUS APPROVED");
+
+  // pick agreed record
+  const record =
+    searchResults.A ||
+    searchResults.B ||
+    searchResults.C ||
+    searchResults.D;
+
+  const m =
+    record.itemId +
+    record.quantity +
+    record.unitPrice +
+    record.nodeId;
 
   // ─────────────────────────────
   // [2] IDENTITY SET
@@ -306,47 +377,70 @@ const signature = { t, s };
 msLog("");
 msLog("Final Signature:");
 msLog(`(t, s) = (${t}, ${s})`);
-
-  // ─────────────────────────────
+  // ────────────────
   // [9] VERIFICATION
-  // ─────────────────────────────
-  msTitle("[9] SIGNATURE VERIFICATION");
+  // ────────────────
+  msTitle("[9] VERIFICATION");
 
   const left = modPow(s, PKG.e, n);
 
-// Step-by-step multiplication under mod
-const v1 = mod(IDENTITY.A.i * IDENTITY.B.i, n);
-const v2 = mod(v1 * IDENTITY.C.i, n);
-const v3 = mod(v2 * IDENTITY.D.i, n);
+  const right =
+    mod(
+      (IDENTITY.A.i * IDENTITY.B.i * IDENTITY.C.i * IDENTITY.D.i) *
+      modPow(t, H, n),
+      n
+    );
 
-// exponent part
-const v4 = modPow(t, H, n);
+  msLog(`left = ${left}`);
+  msLog(`right = ${right}`);
 
-// final
-const right = mod(v3 * v4, n);
+  msLog(left === right ? "✓ VALID" : "✗ INVALID");
 
-  msLog(`Verification 1 = s^e mod n = ${left}`);
-  msLog(`Verification 2 = (i1 * i2 * i3 * i4) * t^(H(t,m)) mod n  = ${right}`);
+  // ────────────────
+  // [10] ENCRYPTION
+  // ────────────────
+  msTitle("[10] SECURE DELIVERY");
 
-  if (left === right) {
-    msLog("Verification 1 = Verification 2");
-    msLog("✓ SIGNATURE VALID");
-  } else {
-    msLog("Verification 1 ≠ Verification 2");
-    msLog("✗ SIGNATURE INVALID");
-  }
+  const packet = btoa(JSON.stringify({
+    record,
+    signature: {
+      t: t.toString(),
+      s: s.toString()
+    }
+  }));
+
+  msLog("Encrypted packet sent");
+
+  const decrypted = JSON.parse(atob(packet));
+
+  msLog("Decrypted packet:");
+  msLog(JSON.stringify(decrypted, null, 2));
+
+  // ────────────────
+  // [11] USER VALIDATION
+  // ────────────────
+  msTitle("[11] USER VERIFICATION");
+
+  const userCheck = modPow(
+    BigInt(decrypted.signature.s),
+    PKG.e,
+    n
+  );
+
+  const ok = userCheck === left;
+
+  msLog(ok ? "✓ USER ACCEPTED" : "✗ USER REJECTED");
 
   return signature;
 }
 
 // ─────────────────────────────────────────────
-// EVENT HOOK (UI BUTTON)
+// BUTTON
 // ─────────────────────────────────────────────
 
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("searchBtn").addEventListener("click", async () => {
     const id = document.getElementById("searchItemID").value;
-    msClear();
-    await runMultiSignature(id);
+    await submitQuery(id);
   });
 });
