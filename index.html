@@ -5,34 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blockchain Assignment 2</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style.css">
-    <h1>Blockchain Assignment 2</h1>
-</head>
+    
+    </head>
 
 
 <body>
 
     <h1>Blockchain Assignment 2</h1>
+    
+    <div class="mode-buttons">
+    <button id="addModeBtn" class="mode-btn active">Add Record</button>
+    <button id="searchModeBtn" class="mode-btn">Search Record</button>
+</div>
+    
+
+    <div id="addSystem">
 
     <div class="top-panel">
 
         <div class="card">
-        <div class="card-body">Add New Record</div>
-        <form id="addRecordForm">
-            <label>ItemID: <input type="number" id="ItemID" required></label><br><br>
-            <label>ItemQTY: <input type="number" id="ItemQTY" required></label><br><br>
-            <label>ItemPrice: <input type="number" id="ItemPrice" required></label><br><br>
-            <label>Location:
-                <select id="Location" required>
-                    <option value="">-- Select Warehouse --</option>
-                    <option value="A">Warehouse A</option>
-                    <option value="B">Warehouse B</option>
-                    <option value="C">Warehouse C</option>
-                    <option value="D">Warehouse D</option>
-                </select>
-            </label><br><br>
-            <button type="submit">Add Record</button>
-        </form>
+            <div class="card-body">Add New Record</div>
+
+            <form id="addRecordForm">
+                <label>ItemID: <input type="number" id="ItemID" required></label><br><br>
+                <label>ItemQTY: <input type="number" id="ItemQTY" required></label><br><br>
+                <label>ItemPrice: <input type="number" id="ItemPrice" required></label><br><br>
+
+                <label>Location:
+                    <select id="Location" required>
+                        <option value="">-- Select Warehouse --</option>
+                        <option value="A">Warehouse A</option>
+                        <option value="B">Warehouse B</option>
+                        <option value="C">Warehouse C</option>
+                        <option value="D">Warehouse D</option>
+                    </select>
+                </label><br><br>
+
+                <button type="submit">Add Record</button>
+            </form>
         </div>
 
         <div class="card">
@@ -41,6 +51,34 @@
         </div>
 
     </div>
+
+</div>
+
+<!-- MULTI-SIGNATURE QUERY PANEL -->
+<div id="searchSystem" style="display:none;">
+
+    <div class="top-panel">
+
+        <div class="card">
+            <div class="card-body">Multi-Signature Query</div>
+
+            <label>Item ID:
+                <input type="number" id="searchItemID" placeholder="e.g. 002">
+            </label>
+
+            <br><br>
+
+            <button id="searchBtn">Run Multi-Signature Verification</button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">Multi-Signature Log</div>
+            <div id="multiSignLog"></div>
+        </div>
+
+    </div>
+
+</div>
 
     <div class="warehouse-box">
     <h1 class="titleA">Warehouse A</h1>
@@ -106,27 +144,7 @@
 <!-- MULTI-SIGNATURE QUERY PANEL -->
 <!-- ───────────────────────────── -->
 
-<!-- MULTI-SIGNATURE QUERY PANEL -->
-<div class="top-panel">
 
-    <div class="card">
-        <div class="card-body">Multi-Signature Query</div>
-
-        <label>Item ID:
-            <input type="number" id="searchItemID" placeholder="e.g. 002">
-        </label>
-
-        <br><br>
-
-        <button id="searchBtn">Run Multi-Signature Verification</button>
-    </div>
-
-    <div class="card">
-    <div class="card-body">Multi-Signature Log</div>
-    <div id="multiSignLog"></div>
-</div>
-
-</div>
     <!--
         1. crypto.js first       — defines NODES[], math utils, generateKeyPair
         2. nodeX_parameters.js   — calls generateKeyPair(), pushes into NODES[]

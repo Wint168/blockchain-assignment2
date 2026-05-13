@@ -86,7 +86,21 @@ async function displayRecords() {
   });
 }
 
+const addModeBtn = document.getElementById("addModeBtn");
+const searchModeBtn = document.getElementById("searchModeBtn");
 
+const addSystem = document.getElementById("addSystem");
+const searchSystem = document.getElementById("searchSystem");
+
+addModeBtn.addEventListener("click", () => {
+    addSystem.style.display = "block";
+    searchSystem.style.display = "none";
+});
+
+searchModeBtn.addEventListener("click", () => {
+    addSystem.style.display = "none";
+    searchSystem.style.display = "block";
+});
 // ─────────────────────────────────────────────────────────────
 // SUBMIT HANDLER
 // ─────────────────────────────────────────────────────────────

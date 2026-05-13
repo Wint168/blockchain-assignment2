@@ -148,3 +148,42 @@ button:hover {
     background-color: white;
 }
 
+/* Container */
+.mode-buttons {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    gap: 0; /* no gap = connected tabs */
+}
+
+/* Base button */
+.mode-btn {
+    padding: 10px 25px;
+    border: 1px solid #ccc;
+    background-color: #000000;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Left tab */
+.mode-btn:first-child {
+    border-radius: 8px 0 0 8px;
+}
+
+/* Right tab */
+.mode-btn:last-child {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Hover */
+.mode-btn:hover {
+    background-color: #e0e0e0;
+}
+
+/* Active tab */
+.mode-btn.active {
+    background-color: #333;
+    color: white;
+    border-color: #333;
+}
