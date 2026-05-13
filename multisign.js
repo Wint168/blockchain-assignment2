@@ -68,7 +68,22 @@ function modPow(base, exp, mod) {
 function mod(n, m) {
   return ((n % m) + m) % m;
 }
+// PKG
+const n = PKG.n;
+const d = PKG.d;
+const phi  = PKG.phi;
 
+// PO
+const n_PO = PO.n;
+const d_PO = PO.d;
+
+// Node identities
+const IDENTITY = {
+  A: NODES.find(n => n.name === "A"),
+  B: NODES.find(n => n.name === "B"),
+  C: NODES.find(n => n.name === "C"),
+  D: NODES.find(n => n.name === "D")
+};
 // ─────────────────────────────────────────────
 // HASH
 // ─────────────────────────────────────────────
@@ -91,29 +106,7 @@ async function hashMessage(t, m) {
   };
 }
 
-// ─────────────────────────────────────────────
-// IDENTITIES
-// ─────────────────────────────────────────────
 
-const IDENTITY = {
-  A: { i: 126n, r: 621n },
-  B: { i: 127n, r: 721n },
-  C: { i: 128n, r: 821n },
-  D: { i: 129n, r: 921n }
-};
-
-// ─────────────────────────────────────────────
-// PKG
-// ─────────────────────────────────────────────
-
-const PKG = {
-  p: 1004162036461488639338597000466705179253226703n,
-  q: 950133741151267522116252385927940618264103623n,
-  e: 973028207197278907211n
-};
-
-const n = PKG.p * PKG.q;
-const phi = (PKG.p - 1n) * (PKG.q - 1n);
 
 function modInverse(e, phi) {
   let [a, b] = [e, phi];
@@ -127,17 +120,7 @@ function modInverse(e, phi) {
   return mod(x0, phi);
 }
 
-const d = modInverse(PKG.e, phi);
 
-const PO = {
-  p: 1080954735722463992988394149602856332100628417n,
-  q: 1158106283320086444890911863299879973542293243n,
-  e: 106506253943651610547613n
-};
-
-const n_PO = PO.p * PO.q;
-const phi_PO = (PO.p - 1n) * (PO.q - 1n);
-const d_PO = modInverse(PO.e, phi_PO);
 // ─────────────────────────────────────────────
 // NODE SEARCH (DISTRIBUTED)
 // ─────────────────────────────────────────────
@@ -444,13 +427,10 @@ msTitle("[6] INITIATE CONSENSUS");
   msLog("✓ CONSENSUS APPROVED");
 
   // ────────────────
-  // [10] ENCRYPTION
+  // [7] ENCRYPTION
   // ────────────────
-  msTitle("[7] ENCRYPT THE SEARCH RESULT");
+msTitle("[7] ENCRYPT THE SEARCH RESULT");
 
-
-
-// message
 const message = JSON.stringify({
   record,
   signature: {
