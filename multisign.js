@@ -144,17 +144,23 @@ async function distributedSearch(itemId) {
 // CONSENSUS (PBFT SIMULATION)
 // ─────────────────────────────────────────────
 
-function runConsensus(record, signature) {
+function runConsensus(record, signature, H) {
   const votes = {};
   let accept = 0;
 
   for (const node of ["A","B","C","D"]) {
-    // simulate node verifying signature + record integrity
-    const valid =
-      record &&
-      signature &&
-      signature.t &&
-      signature.s;
+
+    // recompute verification per node
+    const left = modPow(signature.s, PKG.e, n);
+
+    const v1 = mod(IDENTITY.A.i * IDENTITY.B.i, n);
+    const v2 = mod(v1 * IDENTITY.C.i, n);
+    const v3 = mod(v2 * IDENTITY.D.i, n);
+    const v4 = modPow(signature.t, H, n);
+
+    const right = mod(v3 * v4, n);
+
+    const valid = (left === right);
 
     votes[node] = valid ? "ACCEPT" : "REJECT";
     if (valid) accept++;
@@ -167,7 +173,6 @@ function runConsensus(record, signature) {
     approved: accept >= 3
   };
 }
-
 // ─────────────────────────────────────────────
 // USER QUERY FLOW
 // ─────────────────────────────────────────────
@@ -256,9 +261,13 @@ async function runMultiSignature(itemId) {
   msTitle("SECRET KEY GENERATION");
 
   const g1 = modPow(IDENTITY.A.i, d, n);
+  IDENTITY.A.g = g1;
   const g2 = modPow(IDENTITY.B.i, d, n);
+  IDENTITY.B.g = g2;
   const g3 = modPow(IDENTITY.C.i, d, n);
+  IDENTITY.C.g = g3;
   const g4 = modPow(IDENTITY.D.i, d, n);
+  IDENTITY.D.g = g4;
   msLog(`Secret Key of A`);
   msLog(`g1 = i1^d mod n = ${g1}`);
   msLog(`Secret Key of B`);
@@ -281,7 +290,7 @@ msLog(`Signer D selects r4 = ${IDENTITY.D.r}`);
 msLog("");
 
 const t1 = modPow(IDENTITY.A.r, PKG.e, n);
-
+IDENTITY.A.t = t1;
 msLog("Signer A:");
 msLog(`t1 = r1^e mod n = ${t1}`);
 
@@ -290,21 +299,21 @@ msLog(`t1 = r1^e mod n = ${t1}`);
 msLog("");
 
 const t2 = modPow(IDENTITY.B.r, PKG.e, n);
-
+IDENTITY.B.t = t2;
 msLog("Signer B:");
 msLog(`t2 = r2^e mod n = ${t2}`);
 
 msLog("");
 
 const t3 = modPow(IDENTITY.C.r, PKG.e, n);
-
+IDENTITY.C.t = t3;
 msLog("Signer C:");
 msLog(`t3 = r3^e mod n = ${t3}`);
 
 msLog("");
 
 const t4 = modPow(IDENTITY.D.r, PKG.e, n);
-
+IDENTITY.D.t = t4;
 msLog("Signer D:");
 msLog(`t4 = r4^e mod n = ${t4}`);
 
@@ -336,9 +345,13 @@ msLog(`H(t, m) = ${H.toString()}`);
   msTitle("SIGNATURES OF EACH SIGNERS");
 
   const s1 = mod(g1 * modPow(IDENTITY.A.r, H, n), n);
+  IDENTITY.A.s = s1;
   const s2 = mod(g2 * modPow(IDENTITY.B.r, H, n), n);
+  IDENTITY.B.s = s2;
   const s3 = mod(g3 * modPow(IDENTITY.C.r, H, n), n);
+  IDENTITY.C.s = s3;
   const s4 = mod(g4 * modPow(IDENTITY.D.r, H, n), n);
+  IDENTITY.D.s = s4;
 
 msLog(`s1 = g1 * r1^H(t, m) mod n = ${s1}`);
 msLog(`s2 = g2 * r2^H(t, m) mod n = ${s2}`);
@@ -389,10 +402,10 @@ const right = mod(v3 * v4, n);
 
   if (left === right) {
     msLog("Verification 1 = Verification 2");
-    msLog("✓ SIGNATURE VALID");
+    msLog("SIGNATURE VALID");
   } else {
     msLog("Verification 1 ≠ Verification 2");
-    msLog("✗ SIGNATURE INVALID");
+    msLog("SIGNATURE INVALID");
   }
 
    msTitle("[5] SEND RESULT + PUBLIC PARAMETERS");
@@ -402,16 +415,12 @@ const right = mod(v3 * v4, n);
     t: t.toString(),
     s: s.toString()
   },
-  PKG: {
-    p: PKG.p.toString(),
-    q: PKG.q.toString(),
-    e: PKG.e.toString()
-  }
+  
 }, null, 2));
   
 msTitle("[6] INITIATE CONSENSUS");
 
-  const consensus = runConsensus(record, signature);
+  const consensus = runConsensus(record, signature, H);
 
   for (const n of ["A","B","C","D"]) {
     msLog(`Node ${n} → ${consensus.votes[n]}`);
@@ -420,11 +429,11 @@ msTitle("[6] INITIATE CONSENSUS");
   msLog(`Accepted: ${consensus.acceptCount}/4`);
 
   if (!consensus.approved) {
-    msLog("✗ CONSENSUS FAILED");
+    msLog("CONSENSUS FAILED");
     return;
   }
 
-  msLog("✓ CONSENSUS APPROVED");
+  msLog("CONSENSUS APPROVED");
 
   // ────────────────
   // [7] ENCRYPTION
@@ -445,25 +454,27 @@ msLog(`Message = ${message}`);
 msLog(`Applying SHA-256 hash to message: ${hashHex}`);
 
 
-msLog(`Converting hex hashed value into decimal: ${hashDecimal}`);
+msLog(`Converting hex hashed value into decimal : m = ${hashDecimal}`);
 
 // 2. ENCRYPT
 const cipher = modPow(hashDecimal, PO.e, n_PO);
 
 msTitle("[8] SEND ENCRYPTED DATA");
-msLog(`Encrypted value = ${cipher}`);
+msLog(`Encrypted value : c = m ^ e mod n = ${cipher}`);
 
  msTitle("[9] DECRYPT");
 const decryptedHash = modPow(cipher, d_PO, n_PO);
 
-msLog(`Decrypted value= ${decryptedHash}`);
+msLog(`Decrypted value = c ^ d mod n = ${decryptedHash}`);
 
 msTitle("[10] VALIDATE RESULT");
+
+msLog("Procurement officer receives the message and encrypted value. The message is hashed and hex value is then converted into the decimal value.")
 if (decryptedHash === hashDecimal) {
   msLog("decryptedHash = hashDecimal");
-  msLog("✓ HASH VERIFIED — message intact");
+  msLog("HASH VERIFIED — message is not tampered");
 } else {
-  msLog("✗ HASH MISMATCH — tampered");
+  msLog("HASH MISMATCH — tampered");
 }
   
 }
