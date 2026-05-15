@@ -141,7 +141,7 @@ async function distributedSearch(itemId) {
 }
 
 // ─────────────────────────────────────────────
-// CONSENSUS (PBFT SIMULATION)
+// CONSENSUS (PoA SIMULATION)
 // ─────────────────────────────────────────────
 
 function runConsensus(record, signature, H) {
