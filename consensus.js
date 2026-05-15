@@ -5,136 +5,121 @@
   consensus.js
   Task 2: Consensus Protocol Integration
 
-  Chosen Mechanism: Practical Byzantine Fault Tolerance (PBFT)
+  Chosen Mechanism: Proof of Authority (PoA)
 
-  PBFT is chosen because:
-    - 4 known inventory nodes — small permissioned network
-    - Designed for networks where nodes may be faulty/malicious
-    - Tolerates f Byzantine nodes where n >= 3f + 1
-        n = 4, f = 1 → 4 >= 3(1) + 1 = 4 ✓
-      meaning 1 malicious node can be tolerated
-    - No cryptocurrency or mining required — purely vote based
-    - Assignment requires handling malicious updates — PBFT
-      explicitly addresses this
+  PoA is chosen because:
+    - The system consists of 4 known, pre-approved inventory
+      nodes — a small permissioned network where all
+      participants are established in advance
+    - No cryptocurrency, mining, or staking is required 
+      consensus is reached through authority validation
+    - Suited for private, controlled environments such as
+      this inventory management system
+    - Each node is a recognised authority — only authorised
+      nodes can submit and validate records
 
-  3 Phases:
-    1. PRE-PREPARE — leader node proposes the signed record
-    2. PREPARE     — all other nodes verify and cast votes
-    3. COMMIT      — if threshold met, record is committed
-
-  Note on implementation:
-    In a real PBFT system, nodes exchange prepare and commit
-    messages across the network. In this implementation, we
-    simulate this behaviour through aggregated vote collection,
-    as a full distributed network is not required per the
-    assignment specification.
+  How it works:
+    - The submitting node must be a recognised authority
+    - All other authority nodes validate the digital signature
+    - If the submitting node is authorised AND a majority of
+      other nodes approve → record is accepted
+    - If the submitting node is not authorised → rejected
 
   Trade-offs:
-    - Latency:        All verifying nodes must respond before
+    - Latency:        All authority nodes must validate before
                       a decision is made
-    - Security:       Tolerates 1 Byzantine node out of 4
-    - Fault tolerance: Offline node = non-vote, system
-                      prioritises safety over availability
-    - Scalability:    Best for small networks — suits 4 nodes
+    - Trust:          Relies on pre-approved node identities —
+                      suitable for a controlled inventory system
+    - Fault tolerance: If an authority node goes offline it
+                      cannot validate — system prioritises
+                      consistency over availability
+    - Scalability:    Best for small fixed networks of known
+                      participants — suits this 4-node system
+    - Efficiency:     No computational overhead — faster than
+                      PoW and simpler than BFT voting rounds
 
-  THRESHOLD: 3 out of 4 nodes (satisfies n >= 3f + 1)
+  AUTHORISED NODES: A, B, C, D
+  APPROVAL THRESHOLD: majority of validating nodes (>= 2 of 3)
 ==============================================================
 */
 
-const TOTAL_NODES         = 4;
-const CONSENSUS_THRESHOLD = 3;
+const AUTHORISED_NODES    = ["A", "B", "C", "D"];
+const CONSENSUS_THRESHOLD = 2; // majority of 3 validating nodes
 
 
 // ─────────────────────────────────────────────────────────────
-// PBFT — 3 Phase Consensus
+// PoA — Proof of Authority Consensus
 // ─────────────────────────────────────────────────────────────
 
 /*
-  runPBFTConsensus() implements the 3 PBFT phases:
+  runPoAConsensus() implements PoA consensus:
 
-  Phase 1 — PRE-PREPARE:
-    Leader (originating node) proposes the signed record
-    to all other nodes for validation.
+  Step 1 — AUTHORITY CHECK:
+    Verify the submitting node is a recognised authority.
+    If not authorised → reject immediately.
 
-  Phase 2 — PREPARE:
-    Each receiving node verifies the digital signature:
+  Step 2 — AUTHORITY VALIDATION:
+    Each other authority node verifies the digital signature:
       m' = s^e mod n
-    If m' == m → vote ACCEPT
-    If m' != m → vote REJECT
-    Threshold check: acceptCount >= 3
+    If m' == m → APPROVED
+    If m' != m → REJECTED
 
-  Phase 3 — COMMIT:
-    If threshold is met in PREPARE, nodes commit.
-    Final decision is broadcast — record is either
-    accepted and stored, or rejected.
+  Step 3 — CONSENSUS DECISION:
+    If node is authorised AND majority of validators approve
+    → record is accepted and stored.
 */
 
-function runPBFTConsensus(record, verificationResults) {
+function runPoAConsensus(record, verificationResults) {
 
-  // ── Phase 1: PRE-PREPARE ───────────────────────────────────
-  // Leader node proposes the signed record to all other nodes
-  const proposal = {
-    phase:    "PRE-PREPARE",
-    leader:   record.nodeId,
-    recordId: record.itemId,
-    digest:   record.digest || "N/A",
-  };
+  // ── Step 1: AUTHORITY CHECK ────────────────────────────────
+  // Verify the submitting node is a recognised authority
+  const isAuthorised = AUTHORISED_NODES.includes(record.nodeId);
 
-  // ── Phase 2: PREPARE ───────────────────────────────────────
-  // Each node verifies the signature and casts a vote
-  // Formula: m' = s^e mod n, valid if m' == m
-  const prepareVotes = verificationResults.map(result => ({
-    node:    result.verifyingNode,
-    vote:    result.valid ? "ACCEPT" : "REJECT",
-    valid:   result.valid,
-    formula: `m' = s^e mod n → m' ${result.valid ? "==" : "!="} m → ${result.valid ? "ACCEPT" : "REJECT"}`,
-  }));
-
-  const prepareCount  = prepareVotes.filter(v => v.vote === "ACCEPT").length;
-  const prepareResult = prepareCount >= CONSENSUS_THRESHOLD;
-
-  // If threshold not met in PREPARE phase — fail early
-  if (!prepareResult) {
+  if (!isAuthorised) {
     return {
-      approved:    false,
-      phase:       "PREPARE_FAILED",
-      proposal,
-      prepareVotes,
-      prepareCount,
-      commitVotes: [],
-      commitCount: 0,
-      threshold:   CONSENSUS_THRESHOLD,
-      formula:     `${prepareCount} >= ${CONSENSUS_THRESHOLD} ? NO → REJECTED`,
+      approved:      false,
+      phase:         "AUTHORITY_FAILED",
+      isAuthorised:  false,
+      submittingNode: record.nodeId,
+      votes:         [],
+      approvedCount: 0,
+      threshold:     CONSENSUS_THRESHOLD,
+      formula:       `Node ${record.nodeId} is NOT a recognised authority → REJECTED`,
     };
   }
 
-  // ── Phase 3: COMMIT ────────────────────────────────────────
-  // Threshold met in PREPARE — nodes commit to the decision
-  const commitVotes = prepareVotes.map(v => ({
-    node: v.node,
-    vote: v.vote,
+  // ── Step 2: AUTHORITY VALIDATION ──────────────────────────
+  // Each authority node verifies the digital signature
+  // Formula: m' = s^e mod n, valid if m' == m
+  const votes = verificationResults.map(result => ({
+    node:    result.verifyingNode,
+    vote:    result.valid ? "APPROVED" : "REJECTED",
+    valid:   result.valid,
+    formula: `m' = s^e mod n → m' ${result.valid ? "==" : "!="} m → ${result.valid ? "APPROVED" : "REJECTED"}`,
   }));
 
-  const commitCount = commitVotes.filter(v => v.vote === "ACCEPT").length;
-  const approved    = commitCount >= CONSENSUS_THRESHOLD;
+  const approvedCount = votes.filter(v => v.vote === "APPROVED").length;
+  const rejectedCount = votes.filter(v => v.vote === "REJECTED").length;
+  const approved      = isAuthorised && approvedCount >= CONSENSUS_THRESHOLD;
 
+  // ── Step 3: CONSENSUS DECISION ─────────────────────────────
   return {
     approved,
-    phase:       "COMMIT",
-    proposal,
-    prepareVotes,
-    prepareCount,
-    commitVotes,
-    commitCount,
-    threshold:   CONSENSUS_THRESHOLD,
-    formula:     `${commitCount} >= ${CONSENSUS_THRESHOLD} ? ${approved ? "YES → APPROVED" : "NO → REJECTED"}`,
+    phase:          approved ? "ACCEPTED" : "REJECTED",
+    isAuthorised,
+    submittingNode: record.nodeId,
+    votes,
+    approvedCount,
+    rejectedCount,
+    threshold:      CONSENSUS_THRESHOLD,
+    formula:        `${approvedCount} >= ${CONSENSUS_THRESHOLD} ? ${approved ? "YES → ACCEPTED" : "NO → REJECTED"}`,
   };
 }
 
 
 // ─────────────────────────────────────────────────────────────
 // Consensus Check
-// PBFT uses majority — NOT unanimity
+// PoA uses majority approval from authority nodes
 // ─────────────────────────────────────────────────────────────
 
 function hasConsensus(consensusResult) {
