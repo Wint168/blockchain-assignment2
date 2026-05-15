@@ -226,62 +226,51 @@ document.getElementById("addRecordForm").addEventListener("submit", async functi
   }
 
   // ── [4] CONSENSUS — PBFT (3 Phases) ───────────────────────
-  logTitle("[4] CONSENSUS — PBFT (Practical Byzantine Fault Tolerance)");
-  logRow("Formula", "n >= 3f + 1");
-  logFormula(
-    `n = ${NODES.length} nodes, f = 1 faulty node tolerated\n` +
-    `${NODES.length} >= 3(1) + 1 = 4 ✓\n` +
-    `Threshold = ${CONSENSUS_THRESHOLD} out of ${NODES.length} nodes must ACCEPT`
-  );
+  logTitle("[4] CONSENSUS — Proof of Authority (PoA)");
+logSpacer();
+await delay(400);
+
+const consensusResult = runPoAConsensus(signedRecord, verificationResults);
+
+// Step 1 — Authority Check
+logTitle("  Step 1: AUTHORITY CHECK");
+logFormula(
+  `Authorised nodes: ${AUTHORISED_NODES.join(", ")}\n` +
+  `Submitting node: ${consensusResult.submittingNode}\n` +
+  `Is authorised? ${consensusResult.isAuthorised ? "✓ YES — Node " + consensusResult.submittingNode + " is a recognised authority" : "✗ NO — Node " + consensusResult.submittingNode + " is NOT authorised"}`
+);
+logSpacer();
+await delay(400);
+
+// Step 2 — Authority Validation
+logTitle("  Step 2: AUTHORITY VALIDATION");
+logRow("Formula", "m' = s^e mod n, valid if m' == m");
+logSpacer();
+
+consensusResult.votes.forEach(v => {
+  logFormula(v.formula);
+  logFormula(`Node ${v.node} → vote = ${v.vote}`);
   logSpacer();
-  await delay(400);
+});
 
-  const consensusResult = runPBFTConsensus(signedRecord, verificationResults);
+logFormula(
+  `Approved count = ${consensusResult.approvedCount} / ${otherNodes.length}\n` +
+  `Rejected count = ${consensusResult.rejectedCount} / ${otherNodes.length}\n` +
+  `Threshold = ${consensusResult.threshold} approvals required\n` +
+  `${consensusResult.approvedCount} >= ${consensusResult.threshold} ? ${consensusResult.approvedCount >= consensusResult.threshold ? "✓ YES" : "✗ NO"}`
+);
+logSpacer();
+await delay(400);
 
-  // Phase 1 — PRE-PREPARE
-  logTitle("  Phase 1: PRE-PREPARE");
-  logFormula(
-    `Leader node: ${consensusResult.proposal.leader}\n` +
-    `Proposing record: ${consensusResult.proposal.recordId}\n` +
-    `Digest: ${consensusResult.proposal.digest}`
-  );
-  logSpacer();
-  await delay(400);
-
-  // Phase 2 — PREPARE
-  logTitle("  Phase 2: PREPARE");
-  logRow("Formula", "m' = s^e mod n, valid if m' == m");
-  logSpacer();
-
-  consensusResult.prepareVotes.forEach(v => {
-    logFormula(v.formula);
-    logFormula(`Node ${v.node} → vote = ${v.vote}`);
-    logSpacer();
-  });
-
-  logFormula(
-    `Prepare count = ${consensusResult.prepareCount} / ${NODES.length}\n` +
-    `${consensusResult.prepareCount} >= ${consensusResult.threshold} ? ` +
-    `${consensusResult.prepareCount >= consensusResult.threshold ? "✓ YES — proceed to COMMIT" : "✗ NO — REJECTED at PREPARE"}`
-  );
-  logSpacer();
-  await delay(400);
-
-  // Phase 3 — COMMIT
-  if (consensusResult.phase !== "PREPARE_FAILED") {
-    logTitle("  Phase 3: COMMIT");
-    consensusResult.commitVotes.forEach(v => {
-      logFormula(`Node ${v.node} → ${v.vote}`);
-    });
-    logSpacer();
-    logFormula(
-      `Commit count = ${consensusResult.commitCount} / ${NODES.length}\n` +
-      `${consensusResult.commitCount} >= ${consensusResult.threshold} ? ` +
-      `${consensusResult.approved ? "✓ YES — APPROVED" : "✗ NO — REJECTED"}`
-    );
-  }
-  logSpacer();
-  await delay(400);
+// Step 3 — Consensus Decision
+logTitle("  Step 3: CONSENSUS DECISION");
+logFormula(
+  `Node ${consensusResult.submittingNode} is authorised: ${consensusResult.isAuthorised ? "✓ YES" : "✗ NO"}\n` +
+  `Majority approval: ${consensusResult.approvedCount >= consensusResult.threshold ? "✓ YES" : "✗ NO"}\n` +
+  `Final decision: ${consensusResult.approved ? "✓ ACCEPTED" : "✗ REJECTED"}`
+);
+logSpacer();
+await delay(400);
 
   // ── [5] STORAGE ────────────────────────────────────────────
   if (consensusResult.approved) {
@@ -298,7 +287,7 @@ document.getElementById("addRecordForm").addEventListener("submit", async functi
 
       logSpacer();
       logResult(
-        `CONSENSUS APPROVED — ${consensusResult.commitCount}/${NODES.length} nodes accepted. Record stored in all nodes.`,
+        `CONSENSUS APPROVED — ${consensusResult.approvedCount}/${otherNodes.length} authority nodes approved. Record stored in all nodes.`,
         true
       );
 
@@ -311,9 +300,9 @@ document.getElementById("addRecordForm").addEventListener("submit", async functi
   } else {
     logSpacer();
     logResult(
-      `CONSENSUS FAILED — only ${consensusResult.commitCount || consensusResult.prepareCount}/${NODES.length} nodes accepted. Threshold not met.`,
-      false
-    );
+        `CONSENSUS FAILED — only ${consensusResult.approvedCount}/${otherNodes.length} authority nodes approved. Threshold not met.`,
+        false
+      );
   }
 
   this.reset();
